@@ -1,0 +1,137 @@
+---
+title: "LGBT regression"
+author: "Holly"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc:
+      true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment=NA)
+```
+
+```{r, echo=F}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(standardize))
+suppressPackageStartupMessages(library(effects))
+suppressPackageStartupMessages(require(knitr))
+
+a=read_csv("holly_qualtrics_subset.csv", show_col_types = F)
+
+a=a %>% mutate(gender=tolower(gender)) %>% 
+  mutate(gender_superset="Other") %>% 
+  mutate(gender_superset=ifelse(gender=="cis woman",   "CisWom", gender_superset)) %>% 
+  mutate(gender_superset=ifelse(gender=="cis man",     "CisMan", gender_superset)) %>% 
+  mutate(gender_superset=ifelse(gender=="trans man",   "TransMan", gender_superset)) %>% 
+  mutate(gender_superset=ifelse(gender=="non-binary,trans man", "NBTrMan", gender_superset)) %>% 
+  mutate(gender_superset=ifelse(gender=="non-binary", "NonBin", gender_superset)) %>%
+  mutate(gender_superset=ifelse(gender=="trans woman", "TransWom", gender_superset))
+
+b=a %>% 
+  mutate(sexuality = tolower(sexuality)) %>% 
+  mutate(sexuality_superset = "Other") %>%
+  mutate(sexuality_superset = ifelse(sexuality == "bisexual", "Bisexual", sexuality_superset)) %>%
+  mutate(sexuality_superset = ifelse(sexuality == "lesbian", "Lesbian", sexuality_superset)) %>%
+  mutate(sexuality_superset = ifelse(sexuality == "gay", "Gay", sexuality_superset)) %>%
+  mutate(sexuality_superset = ifelse(sexuality == "queer", "Queer", sexuality_superset)) 
+
+c=b %>%  
+  select(-c(gender, sexuality)) %>% 
+  rename(centrality=identity_centrality) %>% 
+  rename(superiority=identity_superiority) %>% 
+  rename(negative=identity_negative) %>% 
+  rename(gender  = gender_superset) %>% 
+  rename(sexuality = sexuality_superset) %>% 
+  mutate(gender=str_replace_all(gender, pattern=" ", replace="_"))
+
+write_csv(c, "holly_data_with_supersets.csv")
+
+d=c
+```
+
+# View the data 
+
+```{r}
+head(d)
+```
+
+# Model with sum contrasts
+
+```{r}
+# set factors
+d$gender = factor(d$gender, levels=c("CisMan", "CisWom", "NBTrMan", "NonBin", "Other", "TransMan", "TransWom"))
+d$sexuality = factor(d$sexuality, levels=c("Bisexual", "Gay", "Lesbian",  "Other", "Queer"))
+
+# set sum contrasts
+contrasts(d$sexuality) = named_contr_sum(d$sexuality)
+contrasts(d$gender) = named_contr_sum(d$gender)
+
+# run regression
+mod.sum=lm(data=d,
+        outcome ~ 
+          anxiety + avoidance + centrality + superiority + negative + 
+          gender + sexuality) 
+```
+
+Sum contrast model output
+
+```{r}
+summary(mod.sum)
+```
+
+
+```{r}
+plot(predictorEffects(mod = mod.sum,
+                      predictors = ~ anxiety))
+```
+
+```{r}
+plot(predictorEffects(mod = mod.sum,
+                      predictors = ~ negative))
+```
+
+
+```{r}
+plot(predictorEffects(mod = mod.sum,
+                      predictors = ~ avoidance))
+```
+
+
+```{r}
+plot(predictorEffects(
+  mod = mod.sum,
+  predictors = ~ centrality + superiority + negative
+))
+```
+
+```{r}
+plot(predictorEffects(mod = mod.sum,
+                      predictors = ~ gender),
+     cex.lab = 2)
+```
+
+```{r}
+plot(predictorEffects(mod = mod.sum,
+                      predictors = ~ sexuality))
+```
+
+
+# Model with treatment contrasts for comparison
+
+
+```{r}
+# set treatment contrasts
+contrasts(d$sexuality) = "contr.treatment"
+contrasts(d$gender) = "contr.treatment"
+
+# run regression
+mod.trt=lm(data=d,
+           outcome ~ 
+             anxiety + avoidance + centrality + superiority + negative + 
+             gender + sexuality) 
+
+summary(mod.trt)
+```
+
