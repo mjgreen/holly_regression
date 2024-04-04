@@ -36,19 +36,6 @@ c=b %>%
 write_csv(c, "holly_data_with_supersets.csv")
 
 
-d=b %>% 
-  select(-c(gender, sexuality)) %>% 
-  mutate(
-    gender=as_factor(gender_superset),
-    sexuality=as_factor(sexuality_superset)
-  ) %>% 
-  select(-c(gender_superset, sexuality_superset)) %>% 
-  rename(centrality=identity_centrality) %>% 
-  rename(superiority=identity_superiority) %>% 
-  rename(negative=identity_negative) %>% 
-  mutate(gender=ifelse(gender=="non-binary_trans man", "non-binary-trans-man", gender))
-
-
 
 mod1=lm(data=d,
         outcome ~ 
