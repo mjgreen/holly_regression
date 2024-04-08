@@ -135,3 +135,25 @@ mod.trt=lm(data=d,
 summary(mod.trt)
 ```
 
+
+# Model with centering
+
+
+```{r}
+# set sum contrasts
+contrasts(d$sexuality) = named_contr_sum(d$sexuality)
+contrasts(d$gender) = named_contr_sum(d$gender)
+
+mod.sum.centred <- lm(data=d, 
+   outcome ~ 
+     scale(anxiety, scale=F)[,1] + 
+     scale(avoidance, scale=F)[,1] +
+     scale(centrality, scale=F)[,1] +
+     scale(superiority, scale=F)[,1] +
+     scale(negative, scale=F)[,1] +
+     gender + sexuality 
+     )
+summary(mod.sum.centred)
+mean(d$outcome)
+```
+
